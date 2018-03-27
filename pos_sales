@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 
 ########################### surroundings ########################"
-with open('C:/Users/Mahmood/Documents/PMI tokyo/Surroundings.json') as json_data:
+with open('~/Surroundings.json') as json_data:
     j = json.load(json_data)
    
 # get the normalized dataframe    
@@ -57,7 +57,7 @@ surround3.head()
 
 
 ############################# sales ###############################
-sales0 = pd.read_csv('C:/Users/Mahmood/Documents/PMI tokyo/sales_granular.csv')
+sales0 = pd.read_csv('~/sales_granular.csv')
 sales0.head()
 
 # duplicate stores
