@@ -26,7 +26,7 @@ surround.head()
 surround.info()
 
 
-# we create a dataframe with 1s if store has corresponding surrounding, Os otherwise
+# we create a dataframe with 1's if store has corresponding surrounding, O's otherwise
 surround3 = DataFrame([[0 for x in range(90)] for y in range(546)])
 # rename the variables for convenience
 surroundnames=['store_code']
@@ -196,13 +196,13 @@ for i in range(539):
 train, test = train_test_split(df, test_size=0.33, random_state=42)
 
 X_train = train.drop(['store_code', 'sales','y'],axis=1) # we drop the features store_code (useless), and sales (target variable)
-X_train2 = train.drop(['store_code', 'sales','y','gym'],axis=1)
-X_train3 = train.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1)
+X_train2 = train.drop(['store_code', 'sales','y','gym'],axis=1) # for second tree
+X_train3 = train.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1) # for third tree
 y_train = train['y']
 
 X_test = test.drop(['store_code', 'sales','y'],axis=1)
-X_test2 = test.drop(['store_code', 'sales','y','gym'],axis=1)
-X_test3 = test.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1)
+X_test2 = test.drop(['store_code', 'sales','y','gym'],axis=1) # for second tree
+X_test3 = test.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1) # for third tree
 y_test = test['y']
 
 
@@ -211,11 +211,15 @@ y_test = test['y']
 # tree 1
 dtree1 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=60)
 dtree1.fit(X_train, y_train)
+
+# pred, acc., TPR and TNR for test
 y_pred = dtree1.predict(X_test)
 accuracy_score(y_test,y_pred)
 cm = confusion_matrix(y_test, y_pred)
 cm[1][1]/(cm[1][0]+cm[1][1])
 cm[0][0]/(cm[0][0]+cm[0][1])
+
+# pred, acc., TPR and TNR for train
 y_pr = dtree1.predict(X_train)
 accuracy_score(y_train,y_pr)
 cm = confusion_matrix(y_train, y_pr)
@@ -231,11 +235,15 @@ dotfile.close() # open the file in text edictor, copy the code and paste it at w
 # tree 2
 dtree2 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=30)
 dtree2.fit(X_train2, y_train)
+
+# pred, acc., TPR and TNR for test
 y_pred = dtree2.predict(X_test2)
 accuracy_score(y_test,y_pred)
 cm = confusion_matrix(y_test, y_pred)
 cm[1][1]/(cm[1][0]+cm[1][1])
 cm[0][0]/(cm[0][0]+cm[0][1])
+
+# pred, acc., TPR and TNR for train
 y_pr = dtree2.predict(X_train2)
 accuracy_score(y_train,y_pr)
 cm = confusion_matrix(y_train, y_pr)
@@ -251,11 +259,15 @@ dotfile.close() # open the file in text edictor, copy the code and paste it at w
 # tree 3
 dtree3 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=50)
 dtree3.fit(X_train3, y_train)
+
+# pred, acc., TPR and TNR for test
 y_pred = dtree3.predict(X_test3)
 accuracy_score(y_test,y_pred)
 cm = confusion_matrix(y_test, y_pred)
 cm[1][1]/(cm[1][0]+cm[1][1])
 cm[0][0]/(cm[0][0]+cm[0][1])
+
+# pred, acc., TPR and TNR for train
 y_pr = dtree3.predict(X_train3)
 accuracy_score(y_train,y_pr)
 cm = confusion_matrix(y_train, y_pr)
