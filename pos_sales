@@ -1,0 +1,275 @@
+# librairies
+import pandas as pd
+from pandas import DataFrame
+import numpy as np
+import json
+from pandas.io.json import json_normalize #package for flattening json in pandas df
+import datetime as dt
+from sklearn.cross_validation import train_test_split
+import matplotlib.pyplot as plt
+from sklearn import datasets, linear_model
+from sklearn import tree
+from sklearn.metrics import confusion_matrix, accuracy_score
+
+
+
+
+
+########################### surroundings ########################"
+with open('C:/Users/Mahmood/Documents/PMI tokyo/Surroundings.json') as json_data:
+    j = json.load(json_data)
+   
+# get the normalized dataframe    
+surround = json_normalize(j)
+
+surround.head()
+surround.info()
+
+
+# we create a dataframe with 1s if store has corresponding surrounding, Os otherwise
+surround3 = DataFrame([[0 for x in range(90)] for y in range(546)])
+# rename the variables for convenience
+surroundnames=['store_code']
+for x in range(1, 90):
+    surroundnames.append(surround.columns[x].split("surroundings.")[1])
+surround3.columns=surroundnames
+
+surround3.iloc[:,0] = surround.iloc[:,0]
+
+
+
+# our variables are the count for each 'surrounding'
+for y in surroundnames[1:90]:
+    for x in range(546):
+        if j[x]['surroundings'][y]!=[]:
+            surround3[y][x] = json_normalize(j[x]['surroundings'][y]).shape[0]
+    
+
+# duplicate stores
+ids = surround3["store_code"]
+surround3[ids.isin(ids[ids.duplicated()])].sort("store_code") # store 11028 has 2 rows (1 duplicate), we keep only 1
+surround3=surround3.drop_duplicates(subset=['store_code'], keep="first")
+
+surround3.head()
+
+
+
+
+
+############################# sales ###############################
+sales0 = pd.read_csv('C:/Users/Mahmood/Documents/PMI tokyo/sales_granular.csv')
+sales0.head()
+
+# duplicate stores
+ids = sales0["store_code"]
+sales0[ids.isin(ids[ids.duplicated()])].sort("store_code") # store 11028 has 4 rows (3 duplicates), we keep only 1
+sales=sales0.drop_duplicates(subset=['store_code'], keep="first")
+
+
+
+######## monthly series total
+month_ts = DataFrame([['','',''] for y in range(11936)])
+month_ts.columns=['date','sales','month']
+month_ts.iloc[:,0] = sales.iloc[:,1:11937].columns
+month_ts.iloc[:,1] = sales.fillna(0).iloc[:, 1:11937].sum(axis=0).reshape((11936,1))
+month_ts.head()
+
+pd.options.mode.chained_assignment = None  # default='warn'
+for x in range(11936):
+    month_ts.iloc[:,2][x] = dt.datetime.strptime('20'+month_ts.iloc[x][0].split(" ")[0].split("/")[2]+'-'+month_ts.iloc[x][0].split(" ")[0].split("/")[0], '%Y-%m').date()
+
+m_ts = month_ts.groupby(by = ['month']).agg({'sales' : 'sum'})
+m_ts2 = m_ts/1000000
+
+# plot the series
+bg_color = 'lightgrey'
+fg_color = 'black'
+fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12,5))
+axes = fig.add_subplot(111)
+axes.patch.set_facecolor(bg_color)
+axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+for spine in axes.spines.values():
+    spine.set_color(fg_color)
+
+plt.plot(m_ts2, 'darkblue', axes=axes)
+plt.title('Total sales', size=20)
+plt.xlabel(' ', color='black')
+plt.ylabel('sales (in millions)', color='black', size=15)
+plt.grid(color='blue')
+plt.show()
+
+
+
+
+
+
+########## monthly series for each store
+
+salesT = sales
+salesT.index = list(sales.iloc[:,0])
+salesT = salesT.T
+salesT = salesT.drop(salesT.index[0])
+
+a = [str(salesT.columns[0])]
+for x in range(1, 903):
+    a.append(str(salesT.columns[x]))
+salesT.columns = a
+
+m_var = ['' for x in range(11936)]
+for x in range(11936):
+    m_var[x] = dt.datetime.strptime('20'+salesT.index[x].split(" ")[0].split("/")[2]+'-'+salesT.index[x].split(" ")[0].split("/")[0], '%Y-%m').date()
+
+    
+salesT['m_var'] = pd.Series(m_var, index=salesT.index) # month variable
+salesT.head()
+
+f = {str(salesT.columns[0]):['sum']} # dictionary containing variables to aggregate
+for x in range(1, 903):
+    f[str(salesT.columns[x])] = ['sum']
+
+
+m_sls = salesT.groupby(by = ['m_var']).agg(f)
+m_sls.head()
+
+
+# plot the series
+bg_color = 'lightgrey'
+fg_color = 'black'
+fig = plt.figure(facecolor=bg_color, edgecolor=fg_color, figsize=(12,5))
+axes = fig.add_subplot(111)
+axes.patch.set_facecolor(bg_color)
+axes.xaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+axes.yaxis.set_tick_params(color=fg_color, labelcolor=fg_color)
+for spine in axes.spines.values():
+    spine.set_color(fg_color)
+
+plt.plot(m_sls.fillna(0).iloc[:,800], 'darkblue', axes=axes)
+plt.plot(m_sls.fillna(0).iloc[:,801], 'darkgreen')
+plt.plot(m_sls.fillna(0).iloc[:,0], 'darkred')
+plt.plot(m_sls.fillna(0).iloc[:,3], 'black')
+plt.plot(m_sls.fillna(0).iloc[:,100], 'darkorange')
+plt.title('Sales for different stores', size=20)
+plt.xlabel(' ', color='black')
+plt.ylabel('sales', color='black', size=15)
+plt.grid(color='blue')
+plt.show()
+
+# we decide to consider the sales starting april
+
+
+###### we create a dataframe with the sum of sales starting april as target variable
+sal = DataFrame([['' for x in range(2)] for y in range(906)])
+sal.columns=['store_code','sales']
+sal.iloc[:,0] = sales0.iloc[:,0]
+sal.iloc[:,1] = sales0.iloc[:,10315:11937].sum(axis=1)
+# duplicate stores
+ids = sal["store_code"]
+sal=sal.drop_duplicates(subset=['store_code'], keep="first")
+
+# sales0.iloc[:,10315:11937].head()
+sal.head()
+
+
+
+
+
+
+
+
+
+
+############################ dataset ###############################
+
+# merging the data, inner join
+df = pd.merge(sal, surround3, how='inner', on='store_code')
+# sal has 903 rows and surround2 has 545, 539 were matched
+
+df['y'] = pd.Series([0 for x in range(539)], index=df.index) # binary variable for sales
+for i in range(539):
+    if df['sales'][i]>=2340:
+        df['u50'][i]=1
+    
+
+
+# train and test samples
+train, test = train_test_split(df, test_size=0.33, random_state=42)
+
+X_train = train.drop(['store_code', 'sales','y'],axis=1) # we drop the features store_code (useless), and sales (target variable)
+X_train2 = train.drop(['store_code', 'sales','y','gym'],axis=1)
+X_train3 = train.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1)
+y_train = train['y']
+
+X_test = test.drop(['store_code', 'sales','y'],axis=1)
+X_test2 = test.drop(['store_code', 'sales','y','gym'],axis=1)
+X_test3 = test.drop(['store_code', 'sales','y','gym','beauty_salon'],axis=1)
+y_test = test['y']
+
+
+########### classification tree
+
+# tree 1
+dtree1 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=60)
+dtree1.fit(X_train, y_train)
+y_pred = dtree1.predict(X_test)
+accuracy_score(y_test,y_pred)
+cm = confusion_matrix(y_test, y_pred)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+y_pr = dtree1.predict(X_train)
+accuracy_score(y_train,y_pr)
+cm = confusion_matrix(y_train, y_pr)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+
+# for plot
+dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree1.dot", 'w')
+tree.export_graphviz(dtree1, out_file = dotfile, feature_names = X_train.columns)
+dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
+
+
+# tree 2
+dtree2 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=30)
+dtree2.fit(X_train2, y_train)
+y_pred = dtree2.predict(X_test2)
+accuracy_score(y_test,y_pred)
+cm = confusion_matrix(y_test, y_pred)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+y_pr = dtree2.predict(X_train2)
+accuracy_score(y_train,y_pr)
+cm = confusion_matrix(y_train, y_pr)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+
+# for plot
+dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree2.dot", 'w')
+tree.export_graphviz(dtree2, out_file = dotfile, feature_names = X_train2.columns)
+dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
+
+
+# tree 3
+dtree3 = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=50)
+dtree3.fit(X_train3, y_train)
+y_pred = dtree3.predict(X_test3)
+accuracy_score(y_test,y_pred)
+cm = confusion_matrix(y_test, y_pred)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+y_pr = dtree3.predict(X_train3)
+accuracy_score(y_train,y_pr)
+cm = confusion_matrix(y_train, y_pr)
+cm[1][1]/(cm[1][0]+cm[1][1])
+cm[0][0]/(cm[0][0]+cm[0][1])
+
+
+# for plot
+dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree3.dot", 'w')
+tree.export_graphviz(dtree3, out_file = dotfile, feature_names = X_train3.columns)
+dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
+
+
+
+
+
+
