@@ -187,7 +187,7 @@ df = pd.merge(sal, surround3, how='inner', on='store_code')
 df['y'] = pd.Series([0 for x in range(539)], index=df.index) # binary variable for sales
 for i in range(539):
     if df['sales'][i]>=2340:
-        df['u50'][i]=1
+        df['y'][i]=1
     
 
 
