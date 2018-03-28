@@ -227,7 +227,7 @@ cm[1][1]/(cm[1][0]+cm[1][1])
 cm[0][0]/(cm[0][0]+cm[0][1])
 
 # for plot
-dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree1.dot", 'w')
+dotfile = open("~/dtree1.dot", 'w')
 tree.export_graphviz(dtree1, out_file = dotfile, feature_names = X_train.columns)
 dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
 
@@ -251,7 +251,7 @@ cm[1][1]/(cm[1][0]+cm[1][1])
 cm[0][0]/(cm[0][0]+cm[0][1])
 
 # for plot
-dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree2.dot", 'w')
+dotfile = open("~/dtree2.dot", 'w')
 tree.export_graphviz(dtree2, out_file = dotfile, feature_names = X_train2.columns)
 dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
 
@@ -276,7 +276,7 @@ cm[0][0]/(cm[0][0]+cm[0][1])
 
 
 # for plot
-dotfile = open("C:/Users/Mahmood/Documents/PMI tokyo/dtree3.dot", 'w')
+dotfile = open("~/dtree3.dot", 'w')
 tree.export_graphviz(dtree3, out_file = dotfile, feature_names = X_train3.columns)
 dotfile.close() # open the file in text edictor, copy the code and paste it at webgraphviz.com
 
